@@ -1,0 +1,7 @@
+[project]
+name = "konto_kompass_ui"
+version = "0.1.0"
+dependencies = [
+  "streamlit==1.37.1",
+  "requests==2.32.3",
+]

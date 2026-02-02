@@ -1,0 +1,11 @@
+[project]
+name = "konto_kompass_worker"
+version = "0.1.0"
+dependencies = [
+  "celery[redis]==5.4.0",
+  "SQLAlchemy==2.0.32",
+  "psycopg[binary]==3.2.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["app"]

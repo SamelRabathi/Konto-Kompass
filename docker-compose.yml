@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: konto_kompass
+      POSTGRES_USER: konto
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata_konto_kompass:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql+psycopg://konto:${POSTGRES_PASSWORD}@db:5432/konto_kompass
+      TZ: Europe/Berlin
+      APP_ENV: ${APP_ENV}
+      APP_SECRET: ${APP_SECRET}
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: ./worker
+    environment:
+      DATABASE_URL: postgresql+psycopg://konto:${POSTGRES_PASSWORD}@db:5432/konto_kompass
+      REDIS_URL: redis://redis:6379/0
+      TZ: Europe/Berlin
+      WEALTHAPI_KEY: ${WEALTHAPI_KEY}
+      GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID}
+      GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY}
+    depends_on:
+      - db
+      - redis
+
+  scheduler:
+    build: ./worker
+    command: ["celery", "-A", "app.celery_app:celery", "beat", "-l", "INFO"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://konto:${POSTGRES_PASSWORD}@db:5432/konto_kompass
+      REDIS_URL: redis://redis:6379/0
+      TZ: Europe/Berlin
+      WEALTHAPI_KEY: ${WEALTHAPI_KEY}
+      GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID}
+      GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY}
+    depends_on:
+      - db
+      - redis
+
+  ui:
+    build: ./ui
+    environment:
+      API_BASE_URL: http://api:8000
+      TZ: Europe/Berlin
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"
+
+volumes:
+  pgdata_konto_kompass:
