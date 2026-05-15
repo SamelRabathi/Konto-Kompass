@@ -38,7 +38,11 @@ def login_page():
             if st.form_submit_button("Einloggen"):
                 r = requests.post(f"{API}/auth/login", json={"email": email, "password": password}, timeout=30)
                 if r.status_code != 200:
-                    st.error("Login fehlgeschlagen")
+                    try:
+                        detail = r.json().get("detail", r.text)
+                    except Exception:
+                        detail = r.text
+                    st.error(detail if isinstance(detail, str) else str(detail))
                 else:
                     st.session_state["token"] = r.json()["access_token"]
                     st.rerun()
@@ -54,7 +58,11 @@ def login_page():
                     payload["tenant_name"] = tenant_name
                 r = requests.post(f"{API}/auth/register", json=payload, timeout=30)
                 if r.status_code != 200:
-                    st.error(r.text)
+                    try:
+                        detail = r.json().get("detail", r.text)
+                    except Exception:
+                        detail = r.text
+                    st.error(detail if isinstance(detail, str) else str(detail))
                 else:
                     st.session_state["token"] = r.json()["access_token"]
                     st.rerun()
