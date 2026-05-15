@@ -101,6 +101,13 @@ docker volume rm konto-kompass_pgdata_konto_kompass   # Name: docker volume ls p
 docker compose up -d --build
 ```
 
+### Synchronisierung liefert keine Daten / Status `needs_reauth`
+
+- **Go Cardless:** Feld **Externe Referenz** muss die **Account-UUID** sein, die die GoCardless-API nach der Bank-Verknüpfung zurückgibt (`GET /accounts/` …). Eine **Kontonummer** (z.B. nur Ziffern wie `4189935560`) funktioniert nicht.
+- **WealthAPI:** Hier muss die **Depot-ID** aus dem WealthAPI-Portal/API stehen, nicht die Kontonummer der Bank (Worker nutzt `/depots/{id}/positions`).
+- Logs: `docker compose logs worker --tail 80` — dort erscheinen die Fehlerursachen.
+- Doppelte oder widersprüchliche Verbindungen (gleiche Bank zweimal) löschen bzw. bereinigen.
+
 ## Migrationen
 
 ```bash

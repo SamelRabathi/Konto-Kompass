@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from celery import shared_task
 from konto_models import (
@@ -20,6 +21,8 @@ from .connectors.gocardless import GoCardlessConnector
 from .connectors.csv_trade_republic import CsvTradeRepublicConnector
 from .connectors.manual import ManualConnector
 from konto_connectors import Position, Balance
+
+logger = logging.getLogger(__name__)
 
 
 def connector_for(provider: str):
@@ -197,7 +200,14 @@ def sync_tenant(tenant_id: int):
                 positions = conn_impl.fetch_positions(c.external_ref or "", c.token_blob)
                 balances = conn_impl.fetch_balances(c.external_ref or "", c.token_blob)
                 _persist_connector_data(db, tenant_id, c, positions, balances)
-            except Exception:
+            except Exception as exc:
+                logger.warning(
+                    "Sync Verbindung %s (%s) fehlgeschlagen: %s",
+                    c.id,
+                    c.provider,
+                    exc,
+                    exc_info=True,
+                )
                 c.status = "needs_reauth"
                 db.add(c)
 
