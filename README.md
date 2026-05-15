@@ -73,6 +73,34 @@ pip install pytest
 pytest
 ```
 
+## Fehlerbehebung (Deployment)
+
+### Warnung `variable "..." is not set`
+
+Docker Compose interpretiert `$` in der `.env` als Variablen-Start. Passwort `abc$xyz` wird zu `abc` + leerer Variable `xyz`.
+
+**Lösung:** Passwort ohne `$` wählen, oder `$` als `$$` schreiben (`geheim$$pass` → `geheim$pass`).
+
+### `Connection refused` zu PostgreSQL
+
+Die API startete früher Alembic, bevor Postgres bereit war. Aktuell: DB-Healthcheck + Warte-Skript im API-Entrypoint. Nach `git pull`:
+
+```bash
+docker compose down
+docker compose up -d --build
+docker compose logs -f db
+docker compose logs -f api
+```
+
+Falls die DB mit **leerem** Passwort initialisiert wurde (wegen `$`-Problem), Volume zurücksetzen:
+
+```bash
+docker compose down
+docker volume rm konto-kompass_pgdata_konto_kompass   # Name: docker volume ls prüfen
+# .env mit korrektem POSTGRES_PASSWORD
+docker compose up -d --build
+```
+
 ## Migrationen
 
 ```bash
