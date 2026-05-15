@@ -3,7 +3,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 REDIS_URL = os.environ["REDIS_URL"]
-celery = Celery("portfolio_pulse", broker=REDIS_URL, backend=REDIS_URL)
+celery = Celery("konto_kompass", broker=REDIS_URL, backend=REDIS_URL)
 
 celery.conf.timezone = "Europe/Berlin"
 

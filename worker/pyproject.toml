@@ -5,6 +5,10 @@ dependencies = [
   "celery[redis]==5.4.0",
   "SQLAlchemy==2.0.32",
   "psycopg[binary]==3.2.1",
+  "httpx==0.28.1",
+  "cryptography==44.0.0",
+  "konto-models",
+  "konto-connectors",
 ]
 
 [tool.setuptools.packages.find]
