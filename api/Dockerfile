@@ -13,5 +13,8 @@ RUN pip install --no-cache-dir -U pip \
     && pip install --no-cache-dir /packages/konto_models /packages/konto_connectors \
     && pip install --no-cache-dir .
 
+COPY api/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host=0.0.0.0 --port=8000"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

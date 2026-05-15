@@ -7,13 +7,15 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata_konto_kompass:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U konto -d konto_kompass"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
 
   api:
     build:
@@ -27,10 +29,12 @@ services:
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-10080}
       REDIS_URL: redis://redis:6379/0
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   worker:
     build:
@@ -46,8 +50,10 @@ services:
       GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY}
       GOCARDLESS_BASE_URL: ${GOCARDLESS_BASE_URL:-https://bankaccountdata.gocardless.com/api/v2}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   scheduler:
     build:
@@ -64,8 +70,10 @@ services:
       GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY}
       GOCARDLESS_BASE_URL: ${GOCARDLESS_BASE_URL:-https://bankaccountdata.gocardless.com/api/v2}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   ui:
     build:
@@ -77,7 +85,7 @@ services:
     depends_on:
       - api
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"
 
 volumes:
   pgdata_konto_kompass:
