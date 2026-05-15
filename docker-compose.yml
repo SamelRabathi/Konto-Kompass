@@ -75,12 +75,20 @@ services:
       redis:
         condition: service_started
 
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    environment:
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - UPDATE_IP=ipv4
+    restart: unless-stopped
+
   ui:
     build:
       context: .
       dockerfile: ui/Dockerfile
     environment:
-      API_BASE_URL: http://api:8000
+      API_BASE_URL: https://konto-kompass.duckdns.org/api
       TZ: Europe/Berlin
     depends_on:
       - api
