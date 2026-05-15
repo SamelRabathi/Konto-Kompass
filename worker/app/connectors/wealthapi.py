@@ -1,9 +1,12 @@
+import logging
 import os
 from typing import List
 
 import httpx
 
 from .base import Position, Balance
+
+logger = logging.getLogger(__name__)
 
 
 class WealthApiConnector:
@@ -12,21 +15,27 @@ class WealthApiConnector:
         self.base_url = os.environ.get("WEALTHAPI_BASE_URL", "https://api.wealthapi.eu")
 
     def fetch_positions(self, external_ref: str, token_blob: str | None) -> List[Position]:
-        if not self.api_key or not external_ref:
-            return []
+        if not self.api_key:
+            raise RuntimeError("WealthAPI: WEALTHAPI_KEY fehlt in .env.")
+        if not (external_ref or "").strip():
+            raise ValueError(
+                "WealthAPI: external_ref fehlt. Das ist die Depot-ID aus dem WealthAPI-Dashboard/API, "
+                "nicht die Kontonummer der Bank."
+            )
 
-        try:
-            with httpx.Client(timeout=30.0) as client:
-                resp = client.get(
-                    f"{self.base_url}/depots/{external_ref}/positions",
-                    headers={"X-API-KEY": self.api_key},
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.get(
+                f"{self.base_url}/depots/{external_ref}/positions",
+                headers={"X-API-KEY": self.api_key},
+            )
+            if not resp.is_success:
+                logger.error(
+                    "WealthAPI positions HTTP %s: %s",
+                    resp.status_code,
+                    (resp.text or "")[:500],
                 )
-                if resp.status_code == 404:
-                    return []
-                resp.raise_for_status()
-                payload = resp.json()
-        except httpx.HTTPError:
-            return []
+            resp.raise_for_status()
+            payload = resp.json()
 
         positions: list[Position] = []
         items = payload if isinstance(payload, list) else payload.get("positions", [])
@@ -46,18 +55,26 @@ class WealthApiConnector:
         return positions
 
     def fetch_balances(self, external_ref: str, token_blob: str | None) -> List[Balance]:
-        if not self.api_key or not external_ref:
+        if not self.api_key:
+            raise RuntimeError("WealthAPI: WEALTHAPI_KEY fehlt in .env.")
+        if not (external_ref or "").strip():
             return []
-        try:
-            with httpx.Client(timeout=30.0) as client:
-                resp = client.get(
-                    f"{self.base_url}/depots/{external_ref}",
-                    headers={"X-API-KEY": self.api_key},
+
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.get(
+                f"{self.base_url}/depots/{external_ref}",
+                headers={"X-API-KEY": self.api_key},
+            )
+            if resp.status_code == 404:
+                return []
+            if not resp.is_success:
+                logger.error(
+                    "WealthAPI depot HTTP %s: %s",
+                    resp.status_code,
+                    (resp.text or "")[:500],
                 )
-                resp.raise_for_status()
-                data = resp.json()
-        except httpx.HTTPError:
-            return []
+            resp.raise_for_status()
+            data = resp.json()
 
         cash = float(data.get("cash") or data.get("cashBalance") or 0)
         if cash == 0:

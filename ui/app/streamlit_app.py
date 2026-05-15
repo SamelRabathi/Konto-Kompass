@@ -188,6 +188,12 @@ def tab_liabilities(tenant_id: int):
 
 
 def tab_connections(tenant_id: int):
+    st.info(
+        "**GoCardless:** `external_ref` muss die **Account-UUID** sein, die die GoCardless-API nach der "
+        "Bank-Anbindung zurückgibt (keine Kontonummer/IBAN).\n\n"
+        "**WealthAPI:** `external_ref` ist die **Depot-ID** bei WealthAPI – nicht die Deutsche-Bank-Kontonummer.\n\n"
+        "**Doppelte Einträge:** Zwei Verbindungen zur selben Bank ohne Nutzen wirken nur verwirrend."
+    )
     conns = api_request("GET", f"/tenants/{tenant_id}/connections")
     st.dataframe(conns if conns else [], use_container_width=True)
 
@@ -204,7 +210,9 @@ def tab_connections(tenant_id: int):
         with st.form("new_connection"):
             provider = st.selectbox("Provider", ["gocardless", "wealthapi", "manual", "csv_trade_republic"])
             label = st.text_input("Bezeichnung")
-            external_ref = st.text_input("Externe Referenz (Konto-/Depot-ID)")
+            external_ref = st.text_input(
+                "Externe Referenz (GoCardless: Account-UUID nach Bank-Link | WealthAPI: Depot-ID aus dem Portal)"
+            )
             if st.form_submit_button("Anlegen"):
                 api_request(
                     "POST",
