@@ -4,4 +4,8 @@ version = "0.1.0"
 dependencies = [
   "streamlit==1.37.1",
   "requests==2.32.3",
+  "pandas==2.2.3",
 ]
+
+[tool.setuptools.packages.find]
+where = ["app"]

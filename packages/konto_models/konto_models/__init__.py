@@ -1,6 +1,5 @@
-"""Re-export shared models for convenience."""
-from konto_models import (
-    Base,
+from .base import Base
+from .models import (
     Tenant,
     User,
     TenantMembership,

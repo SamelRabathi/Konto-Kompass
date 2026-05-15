@@ -16,46 +16,61 @@ services:
       - "6379:6379"
 
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://konto:${POSTGRES_PASSWORD}@db:5432/konto_kompass
       TZ: Europe/Berlin
       APP_ENV: ${APP_ENV}
       APP_SECRET: ${APP_SECRET}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-10080}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       - db
+      - redis
     ports:
       - "8000:8000"
 
   worker:
-    build: ./worker
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://konto:${POSTGRES_PASSWORD}@db:5432/konto_kompass
       REDIS_URL: redis://redis:6379/0
       TZ: Europe/Berlin
+      APP_SECRET: ${APP_SECRET}
       WEALTHAPI_KEY: ${WEALTHAPI_KEY}
       GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID}
       GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY}
+      GOCARDLESS_BASE_URL: ${GOCARDLESS_BASE_URL:-https://bankaccountdata.gocardless.com/api/v2}
     depends_on:
       - db
       - redis
 
   scheduler:
-    build: ./worker
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
     command: ["celery", "-A", "app.celery_app:celery", "beat", "-l", "INFO"]
     environment:
       DATABASE_URL: postgresql+psycopg://konto:${POSTGRES_PASSWORD}@db:5432/konto_kompass
       REDIS_URL: redis://redis:6379/0
       TZ: Europe/Berlin
+      APP_SECRET: ${APP_SECRET}
       WEALTHAPI_KEY: ${WEALTHAPI_KEY}
       GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID}
       GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY}
+      GOCARDLESS_BASE_URL: ${GOCARDLESS_BASE_URL:-https://bankaccountdata.gocardless.com/api/v2}
     depends_on:
       - db
       - redis
 
   ui:
-    build: ./ui
+    build:
+      context: .
+      dockerfile: ui/Dockerfile
     environment:
       API_BASE_URL: http://api:8000
       TZ: Europe/Berlin

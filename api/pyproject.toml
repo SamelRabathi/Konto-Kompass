@@ -7,7 +7,19 @@ dependencies = [
   "SQLAlchemy==2.0.32",
   "psycopg[binary]==3.2.1",
   "pydantic==2.10.6",
+  "pydantic[email]==2.10.6",
+  "alembic==1.14.1",
+  "passlib[bcrypt]==1.7.4",
+  "python-jose[cryptography]==3.3.0",
+  "cryptography==44.0.0",
+  "python-multipart==0.0.20",
+  "celery[redis]==5.4.0",
+  "konto-models",
+  "konto-connectors",
 ]
 
 [tool.setuptools.packages.find]
 where = ["app"]
+
+[tool.setuptools]
+package-dir = {"" = "."}
