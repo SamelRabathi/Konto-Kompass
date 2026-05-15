@@ -8,13 +8,11 @@ services:
     volumes:
       - pgdata_konto_kompass:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
-
+    
   api:
     build:
       context: .
