@@ -30,7 +30,7 @@ services:
       - db
       - redis
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   worker:
     build:
@@ -67,17 +67,25 @@ services:
       - db
       - redis
 
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    environment:
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - UPDATE_IP=ipv4
+    restart: unless-stopped
+
   ui:
     build:
       context: .
       dockerfile: ui/Dockerfile
     environment:
-      API_BASE_URL: http://api:8000
+      API_BASE_URL: https://konto-kompass.duckdns.org/api
       TZ: Europe/Berlin
     depends_on:
       - api
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"
 
 volumes:
   pgdata_konto_kompass:
