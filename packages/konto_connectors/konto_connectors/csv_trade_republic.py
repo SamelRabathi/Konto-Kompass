@@ -6,9 +6,20 @@ from .base import Position
 
 
 def _parse_float(value: str) -> float:
-    cleaned = (value or "").strip().replace("€", "").replace(" ", "").replace(".", "").replace(",", ".")
+    cleaned = (value or "").strip().replace("€", "").replace(" ", "")
     if not cleaned:
         return 0.0
+    if "," in cleaned and "." in cleaned:
+        if cleaned.rfind(",") > cleaned.rfind("."):
+            cleaned = cleaned.replace(".", "").replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
+    elif "," in cleaned:
+        cleaned = cleaned.replace(".", "").replace(",", ".")
+    elif "." in cleaned:
+        whole, frac = cleaned.split(".", 1)
+        if not (frac.isdigit() and len(frac) <= 2):
+            cleaned = cleaned.replace(".", "")
     try:
         return float(cleaned)
     except ValueError:

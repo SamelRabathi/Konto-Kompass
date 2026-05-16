@@ -187,12 +187,87 @@ def tab_liabilities(tenant_id: int):
                 st.rerun()
 
 
+def _read_uploaded_csv(uploaded_file) -> str | None:
+    if uploaded_file is None:
+        return None
+    return uploaded_file.read().decode("utf-8-sig")
+
+
+def tab_import(tenant_id: int):
+    st.markdown(
+        "### Daten ohne API-Keys (empfohlen)\n"
+        "Exportiere CSV aus Online-Banking oder Broker und lade sie hier hoch. "
+        "**Kein Scraping**, keine WealthAPI-/GoCardless-Kosten."
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Giro / Kontostand")
+        st.caption("Spalten z. B. Saldo, Kontostand, Betrag, Konto")
+        bal_file = st.file_uploader("Konto-CSV", type=["csv"], key="bal_csv")
+        bal_paste = st.text_area("oder CSV einfügen", key="bal_paste", height=120)
+        bal_name = st.text_input("Kontoname (falls CSV keinen Namen hat)", value="Deutsche Bank Giro")
+        if st.button("Kontostand importieren", key="btn_bal"):
+            content = _read_uploaded_csv(bal_file) or bal_paste.strip()
+            if not content:
+                st.warning("Bitte CSV-Datei oder Text angeben.")
+            else:
+                r = requests.post(
+                    f"{API}/tenants/{tenant_id}/import/balance-csv",
+                    headers=api_headers(),
+                    json={"csv_content": content, "default_account_name": bal_name},
+                    timeout=60,
+                )
+                if r.status_code != 200:
+                    try:
+                        st.error(r.json().get("detail", r.text))
+                    except Exception:
+                        st.error(r.text)
+                else:
+                    st.success(f"Import OK: {r.json()}")
+                    st.rerun()
+
+    with col2:
+        st.subheader("Depot / Wertpapiere")
+        st.caption("Spalten z. B. Instrument, ISIN, Stückzahl, Marktwert (Trade Republic & ähnlich)")
+        dep_file = st.file_uploader("Depot-CSV", type=["csv"], key="dep_csv")
+        dep_paste = st.text_area("oder CSV einfügen", key="dep_paste", height=120)
+        dep_name = st.text_input("Depotname", value="Trade Republic")
+        if st.button("Depot importieren", key="btn_dep"):
+            content = _read_uploaded_csv(dep_file) or dep_paste.strip()
+            if not content:
+                st.warning("Bitte CSV-Datei oder Text angeben.")
+            else:
+                r = requests.post(
+                    f"{API}/tenants/{tenant_id}/import/holdings-csv",
+                    headers=api_headers(),
+                    json={"csv_content": content, "account_name": dep_name},
+                    timeout=60,
+                )
+                if r.status_code != 200:
+                    try:
+                        st.error(r.json().get("detail", r.text))
+                    except Exception:
+                        st.error(r.text)
+                else:
+                    st.success(f"Import OK: {r.json()}")
+                    st.rerun()
+
+    with st.expander("Beispiel CSV Kontostand"):
+        st.code("Konto,Saldo\nDeutsche Bank Giro,4521.33", language="csv")
+    with st.expander("Beispiel CSV Depot"):
+        st.code(
+            "Instrument,ISIN,Quantity,Market Value\n"
+            "MSCI World,IE00BK5BQT80,10,980.50",
+            language="csv",
+        )
+
+
 def tab_connections(tenant_id: int):
-    st.info(
-        "**GoCardless:** `external_ref` muss die **Account-UUID** sein, die die GoCardless-API nach der "
-        "Bank-Anbindung zurückgibt (keine Kontonummer/IBAN).\n\n"
-        "**WealthAPI:** `external_ref` ist die **Depot-ID** bei WealthAPI – nicht die Deutsche-Bank-Kontonummer.\n\n"
-        "**Doppelte Einträge:** Zwei Verbindungen zur selben Bank ohne Nutzen wirken nur verwirrend."
+    st.caption(
+        "Optional: GoCardless/WealthAPI nur wenn du API-Keys hast. "
+        "Sonst Tab **Import** nutzen."
     )
     conns = api_request("GET", f"/tenants/{tenant_id}/connections")
     st.dataframe(conns if conns else [], use_container_width=True)
@@ -252,16 +327,18 @@ def main():
         st.error(f"API-Fehler: {exc}")
         return
 
-    tabs = st.tabs(["Dashboard", "Konten", "Positionen", "Schulden", "Verbindungen"])
+    tabs = st.tabs(["Dashboard", "Import", "Konten", "Positionen", "Schulden", "Verbindungen"])
     with tabs[0]:
         dashboard(tenant_id)
     with tabs[1]:
-        tab_accounts(tenant_id)
+        tab_import(tenant_id)
     with tabs[2]:
-        tab_holdings(tenant_id)
+        tab_accounts(tenant_id)
     with tabs[3]:
-        tab_liabilities(tenant_id)
+        tab_holdings(tenant_id)
     with tabs[4]:
+        tab_liabilities(tenant_id)
+    with tabs[5]:
         tab_connections(tenant_id)
 
 

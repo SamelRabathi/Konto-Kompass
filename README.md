@@ -27,10 +27,37 @@ Beim ersten Start führt die API automatisch Alembic-Migrationen aus.
 ## Registrierung & Nutzung
 
 1. In der UI unter **Registrieren** ein Konto anlegen (legt automatisch ein persönliches Profil/Tenant an).
-2. Unter **Konten** Girokonten anlegen und Kontostände erfassen.
-3. Unter **Positionen** Aktien/ETFs manuell pflegen oder Trade-Republic-CSV importieren.
-4. Unter **Schulden** Einträge für Klarna, PayPal, Hypothek etc. anlegen.
-5. **Verbindungen** für GoCardless/WealthAPI konfigurieren und Sync starten.
+2. Unter **Import** CSV-Dateien hochladen (ohne API-Keys) – siehe unten.
+3. Unter **Schulden** Einträge für Klarna, PayPal, Hypothek etc. anlegen.
+4. Optional: **Verbindungen** für GoCardless/WealthAPI (kostenpflichtig/reguliert).
+
+## Ohne API-Keys: Workflow mit CSV-Exporten
+
+Kein Scraping, keine WealthAPI-/GoCardless-Pflicht. Du exportierst periodisch aus dem Online-Banking bzw. Broker und importierst lokal.
+
+| Was | Wo exportieren | In Konto-Kompass |
+|-----|----------------|------------------|
+| **Giro-Saldo** | Deutsche Bank / anderes HB: Umsätze/Konto oft als CSV; oder eine Zeile mit Kontostand | Tab **Import** → „Konto-CSV“ |
+| **Depot / ETFs** | Trade Republic, viele Broker: Portfolio-CSV | Tab **Import** → „Depot-CSV“ |
+| **Schulden** | — | Tab **Schulden** manuell |
+
+**Beispiel Kontostand (`Konto,Saldo`):**
+
+```csv
+Konto,Saldo
+Deutsche Bank Giro,4521.33
+```
+
+**Beispiel Depot (`Instrument,ISIN,Quantity,Market Value`):**
+
+```csv
+Instrument,ISIN,Quantity,Market Value
+MSCI World,IE00BK5BQT80,10,980.50
+```
+
+Nach dem Import: Dashboard zeigt Nettovermögen; unter **Positionen** / **Konten** die Details. Einmal pro Woche re-importieren reicht für viele Nutzer.
+
+**Hinweis:** Spaltennamen sind flexibel (deutsch/englisch). Passt dein Export nicht, CSV-Beispiel im Tab **Import** ansehen oder Spalten umbenennen.
 
 ## API-Beispiele
 

@@ -199,6 +199,17 @@ class CsvImportRequest(BaseModel):
     account_name: str = "Trade Republic"
 
 
+class HoldingsCsvImportRequest(BaseModel):
+    csv_content: str
+    account_name: str = "Depot Import"
+    provider_label: str = "csv_import"
+
+
+class BalanceCsvImportRequest(BaseModel):
+    csv_content: str
+    default_account_name: str = "Giro Import"
+
+
 class OverviewOut(BaseModel):
     assets_liquidity_eur: float
     assets_investments_eur: float

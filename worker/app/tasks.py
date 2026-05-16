@@ -19,6 +19,7 @@ from .compute import compute_totals, compute_net_worth
 from .connectors.wealthapi import WealthApiConnector
 from .connectors.gocardless import GoCardlessConnector
 from .connectors.csv_trade_republic import CsvTradeRepublicConnector
+from .connectors.csv_import import CsvImportConnector
 from .connectors.manual import ManualConnector
 from konto_connectors import Position, Balance
 
@@ -32,6 +33,8 @@ def connector_for(provider: str):
         return GoCardlessConnector()
     if provider == "csv_trade_republic":
         return CsvTradeRepublicConnector()
+    if provider == "csv_import":
+        return CsvImportConnector()
     if provider in ("manual",):
         return ManualConnector()
     raise ValueError(f"Unknown provider: {provider}")
@@ -96,7 +99,7 @@ def _persist_connector_data(db, tenant_id: int, connection: Connection, position
                 bal.external_ref,
             )
             db.add(BalanceSnapshot(account_id=account.id, amount_eur=bal.amount_eur, ts=datetime.utcnow()))
-    elif connection.provider in ("wealthapi", "csv_trade_republic"):
+    elif connection.provider in ("wealthapi", "csv_trade_republic", "csv_import"):
         account = _upsert_account(
             db,
             tenant_id,

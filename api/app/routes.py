@@ -16,7 +16,7 @@ from konto_models import (
     NetWorthSnapshot,
     DailySnapshot,
 )
-from konto_connectors import parse_trade_republic_csv
+from .imports import import_holdings_csv, import_balance_csv
 
 from .auth import (
     create_access_token,
@@ -52,6 +52,8 @@ from .schemas import (
     ConnectionCreate,
     ConnectionUpdate,
     CsvImportRequest,
+    HoldingsCsvImportRequest,
+    BalanceCsvImportRequest,
     OverviewOut,
     SnapshotOut,
     LegacySnapshotOut,
@@ -481,51 +483,62 @@ def sync_tenant(
 
 
 @router.post("/tenants/{tenant_id}/import/trade-republic-csv")
-def import_trade_republic_csv(
+def import_trade_republic_csv_route(
     tenant_id: int,
     body: CsvImportRequest,
     membership: TenantMembership = Depends(require_tenant_member),
     db: Session = Depends(get_db),
 ):
-    investments_area = (
-        db.query(FinancialArea)
-        .filter(FinancialArea.tenant_id == tenant_id, FinancialArea.slug == "investments")
-        .first()
-    )
-    if not investments_area:
-        raise HTTPException(status_code=400, detail="Investments-Bereich fehlt")
-
-    conn = Connection(
-        tenant_id=tenant_id,
-        provider="csv_trade_republic",
-        label="Trade Republic CSV",
-        token_blob=encrypt_token_blob({"csv_content": body.csv_content}),
-    )
-    db.add(conn)
-    db.flush()
-
-    account = Account(
-        tenant_id=tenant_id,
-        area_id=investments_area.id,
-        connection_id=conn.id,
-        provider="csv_trade_republic",
-        name=body.account_name,
-        is_manual=False,
-    )
-    db.add(account)
-    db.flush()
-
-    for pos in parse_trade_republic_csv(body.csv_content):
-        db.add(
-            Holding(
-                account_id=account.id,
-                asset_type=pos.asset_type,
-                symbol=pos.symbol,
-                isin=pos.isin,
-                quantity=pos.quantity,
-                market_value_eur=pos.market_value_eur,
-            )
+    try:
+        result = import_holdings_csv(
+            db,
+            tenant_id,
+            body.csv_content,
+            body.account_name,
+            provider_label="Trade Republic CSV",
         )
-    db.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     trigger_sync_tenant(tenant_id)
-    return {"status": "imported", "connection_id": conn.id, "account_id": account.id}
+    return {"status": "imported", **result}
+
+
+@router.post("/tenants/{tenant_id}/import/holdings-csv")
+def import_holdings_csv_route(
+    tenant_id: int,
+    body: HoldingsCsvImportRequest,
+    membership: TenantMembership = Depends(require_tenant_member),
+    db: Session = Depends(get_db),
+):
+    try:
+        result = import_holdings_csv(
+            db,
+            tenant_id,
+            body.csv_content,
+            body.account_name,
+            provider_label=body.provider_label,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    trigger_sync_tenant(tenant_id)
+    return {"status": "imported", **result}
+
+
+@router.post("/tenants/{tenant_id}/import/balance-csv")
+def import_balance_csv_route(
+    tenant_id: int,
+    body: BalanceCsvImportRequest,
+    membership: TenantMembership = Depends(require_tenant_member),
+    db: Session = Depends(get_db),
+):
+    try:
+        result = import_balance_csv(
+            db,
+            tenant_id,
+            body.csv_content,
+            body.default_account_name,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    trigger_sync_tenant(tenant_id)
+    return {"status": "imported", **result}
